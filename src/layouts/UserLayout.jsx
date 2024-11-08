@@ -1,19 +1,34 @@
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Box } from '@mui/material';
+import { Box, Container } from '@mui/material';
 
-const UserLayout = ({ children }) => {
+const UserLayout = () => {
   return (
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      bgcolor: 'background.default'
     }}>
       <Navbar />
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        {children}
-      </Box>
+      <Container 
+        component="main" 
+        maxWidth="xl" 
+        sx={{ 
+          flexGrow: 1,
+          py: { xs: 2, md: 4 },
+          px: { xs: 2, md: 3 },
+          mt: 2,
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Box sx={{ flex: 1 }}>
+          <Outlet />
+        </Box>
+      </Container>
       <Footer />
     </Box>
   );

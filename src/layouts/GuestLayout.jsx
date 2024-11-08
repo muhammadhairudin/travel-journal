@@ -1,11 +1,11 @@
 import React from 'react';
-import PropTypes from 'prop-types';
+import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Box, Container } from '@mui/material';
 import ErrorBoundary from '../components/ErrorBoundary';
 
-const GuestLayout = ({ children }) => {
+const GuestLayout = () => {
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -20,23 +20,16 @@ const GuestLayout = ({ children }) => {
         sx={{ 
           flexGrow: 1,
           py: { xs: 2, md: 4 },
-          px: { xs: 2, md: 3 },
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3
+          px: { xs: 2, md: 3 }
         }}
       >
-        <ErrorBoundary onRetry={() => window.location.reload()}>
-          {children}
+        <ErrorBoundary>
+          <Outlet />
         </ErrorBoundary>
       </Container>
       <Footer />
     </Box>
   );
-};
-
-GuestLayout.propTypes = {
-  children: PropTypes.node.isRequired
 };
 
 export default GuestLayout; 

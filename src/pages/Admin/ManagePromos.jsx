@@ -15,16 +15,14 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Stack,
-  InputAdornment,
-  TablePagination
+  Grid,
+  TablePagination,
+  Alert,
+  Snackbar,
+  CircularProgress,
+  InputAdornment
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Search as SearchIcon
-} from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, LocalOffer as PromoIcon } from '@mui/icons-material';
 import { useApi } from '../../services/apiService';
 
 const ManagePromos = () => {
@@ -35,31 +33,58 @@ const ManagePromos = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    terms_condition: '',
-    imageUrl: '',
-    promo_code: '',
-    promo_discount_price: 0,
-    minimum_claim_price: 0
+  const [isLoading, setIsLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+  const [promoStats, setPromoStats] = useState({
+    total: 0,
+    active: 0,
+    expired: 0
   });
 
-  const { getPromos, createPromo, updatePromo, deletePromo } = useApi();
+  const { getPromos, axiosInstance } = useApi();
 
   const fetchPromos = async () => {
+    setIsLoading(true);
     try {
       const response = await getPromos();
-      if (response.data) {
-        setPromos(response.data);
-        setFilteredPromos(response.data);
+      console.log('Raw Response:', response);
+      
+      if (response.code === "200" && response.data) {
+        const promoData = response.data;
+        console.log('Promo Data:', promoData);
+        
+        if (Array.isArray(promoData)) {
+          setPromos(promoData);
+          setFilteredPromos(promoData);
+          
+          const now = new Date();
+          setPromoStats({
+            total: promoData.length,
+            active: promoData.filter(promo => new Date(promo.updatedAt) <= now).length,
+            expired: promoData.filter(promo => new Date(promo.updatedAt) > now).length
+          });
+        } else {
+          console.error('Data bukan array:', promoData);
+          showSnackbar('Format data tidak sesuai', 'error');
+        }
+      } else {
+        console.error('Response tidak valid:', response);
+        showSnackbar('Gagal memuat data promo', 'error');
       }
     } catch (error) {
-      console.error('Error fetching promos:', error);
+      console.error('Error:', error);
+      showSnackbar('Gagal memuat data promo', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('Component mounted, fetching promos...');
     fetchPromos();
   }, []);
 
@@ -67,16 +92,41 @@ const ManagePromos = () => {
     filterPromos();
   }, [promos, searchTerm]);
 
+  useEffect(() => {
+    console.log('Current Promos State:', promos);
+    console.log('Current Filtered Promos State:', filteredPromos);
+  }, [promos, filteredPromos]);
+
   const filterPromos = () => {
     let filtered = [...promos];
     if (searchTerm) {
       filtered = filtered.filter(promo => 
-        promo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        promo.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        promo.promo_code.toLowerCase().includes(searchTerm.toLowerCase())
+        promo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        promo.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        promo.promo_code?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     setFilteredPromos(filtered);
+  };
+
+  const handleDelete = async (promoId) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus promo ini?')) {
+      try {
+        await axiosInstance.delete(`/delete-promo/${promoId}`);
+        showSnackbar('Promo berhasil dihapus');
+        fetchPromos();
+      } catch (error) {
+        showSnackbar('Gagal menghapus promo', 'error');
+      }
+    }
+  };
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
   };
 
   const handleChangePage = (event, newPage) => {
@@ -88,88 +138,72 @@ const ManagePromos = () => {
     setPage(0);
   };
 
-  const handleOpenDialog = (promo = null) => {
-    setSelectedPromo(promo);
-    setFormData(promo || {
-      title: '',
-      description: '',
-      terms_condition: '',
-      imageUrl: '',
-      promo_code: '',
-      promo_discount_price: 0,
-      minimum_claim_price: 0
-    });
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedPromo(null);
-    setFormData({
-      title: '',
-      description: '',
-      terms_condition: '',
-      imageUrl: '',
-      promo_code: '',
-      promo_discount_price: 0,
-      minimum_claim_price: 0
-    });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (selectedPromo) {
-        await updatePromo(selectedPromo.id, formData);
-      } else {
-        await createPromo(formData);
-      }
-      fetchPromos();
-      handleCloseDialog();
-    } catch (error) {
-      console.error('Error saving promo:', error);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this promo?')) {
-      try {
-        await deletePromo(id);
-        fetchPromos();
-      } catch (error) {
-        console.error('Error deleting promo:', error);
-      }
-    }
+  const handleInputChange = (field, value) => {
+    setSelectedPromo(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Promo Management
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add Promo
-        </Button>
-      </Stack>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
+        Promo Management
+      </Typography>
 
-      <TextField
-        fullWidth
-        placeholder="Search promos..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#1976d2', color: 'white' }}>
+            <PromoIcon sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h4">{promoStats.total}</Typography>
+            <Typography>Total Promos</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#28a745', color: 'white' }}>
+            <PromoIcon sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h4">{promoStats.active}</Typography>
+            <Typography>Active Promos</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#dc3545', color: 'white' }}>
+            <PromoIcon sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h4">{promoStats.expired}</Typography>
+            <Typography>Expired Promos</Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            placeholder="Search by title, description, or promo code"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PromoIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+      </Grid>
+
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
         sx={{ mb: 3 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
+        onClick={() => {
+          setSelectedPromo(null);
+          setOpenDialog(true);
         }}
-      />
+      >
+        Add New Promo
+      </Button>
 
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <Table>
@@ -180,29 +214,75 @@ const ManagePromos = () => {
               <TableCell>Promo Code</TableCell>
               <TableCell>Discount</TableCell>
               <TableCell>Min. Claim</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredPromos
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((promo) => (
-                <TableRow key={promo.id}>
-                  <TableCell>{promo.title}</TableCell>
-                  <TableCell>{promo.description}</TableCell>
-                  <TableCell>{promo.promo_code}</TableCell>
-                  <TableCell>{promo.promo_discount_price}</TableCell>
-                  <TableCell>{promo.minimum_claim_price}</TableCell>
-                  <TableCell align="right">
-                    <IconButton onClick={() => handleOpenDialog(promo)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton onClick={() => handleDelete(promo.id)} color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-            ))}
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <CircularProgress />
+                  <Typography sx={{ ml: 2 }}>Memuat data...</Typography>
+                </TableCell>
+              </TableRow>
+            ) : !filteredPromos || filteredPromos.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography>
+                    Tidak ada data promo
+                    {console.log('FilteredPromos saat render:', filteredPromos)}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredPromos
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((promo) => (
+                  <TableRow key={promo.id}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <img 
+                          src={promo.imageUrl} 
+                          alt={promo.title}
+                          style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                        />
+                        {promo.title}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 300 }}>
+                      <Typography noWrap>{promo.description}</Typography>
+                    </TableCell>
+                    <TableCell>{promo.promo_code}</TableCell>
+                    <TableCell>Rp {promo.promo_discount_price?.toLocaleString()}</TableCell>
+                    <TableCell>Rp {promo.minimum_claim_price?.toLocaleString()}</TableCell>
+                    <TableCell>
+                      {new Date(promo.createdAt).toLocaleDateString('id-ID', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton 
+                        onClick={() => {
+                          setSelectedPromo(promo);
+                          setOpenDialog(true);
+                        }}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton 
+                        onClick={() => handleDelete(promo.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
           </TableBody>
         </Table>
         <TablePagination
@@ -216,76 +296,100 @@ const ManagePromos = () => {
         />
       </Paper>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           {selectedPromo ? 'Edit Promo' : 'Add New Promo'}
         </DialogTitle>
         <DialogContent>
-          <TextField
-            margin="dense"
-            label="Title"
-            fullWidth
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Terms & Conditions"
-            fullWidth
-            multiline
-            rows={3}
-            value={formData.terms_condition}
-            onChange={(e) => setFormData({ ...formData, terms_condition: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Image URL"
-            fullWidth
-            value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Promo Code"
-            fullWidth
-            value={formData.promo_code}
-            onChange={(e) => setFormData({ ...formData, promo_code: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Discount Price"
-            type="number"
-            fullWidth
-            value={formData.promo_discount_price}
-            onChange={(e) => setFormData({ ...formData, promo_discount_price: Number(e.target.value) })}
-          />
-          <TextField
-            margin="dense"
-            label="Minimum Claim Price"
-            type="number"
-            fullWidth
-            value={formData.minimum_claim_price}
-            onChange={(e) => setFormData({ ...formData, minimum_claim_price: Number(e.target.value) })}
-          />
+          <Box sx={{ pt: 2 }}>
+            <TextField
+              fullWidth
+              label="Title"
+              value={selectedPromo?.title || ''}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              sx={{ mb: 2 }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              multiline
+              rows={3}
+              value={selectedPromo?.description || ''}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Terms & Conditions"
+              multiline
+              rows={3}
+              value={selectedPromo?.terms_condition || ''}
+              onChange={(e) => handleInputChange('terms_condition', e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Promo Code"
+              value={selectedPromo?.promo_code || ''}
+              onChange={(e) => handleInputChange('promo_code', e.target.value)}
+              sx={{ mb: 2 }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Discount Price"
+              type="number"
+              value={selectedPromo?.promo_discount_price || ''}
+              onChange={(e) => handleInputChange('promo_discount_price', e.target.value)}
+              sx={{ mb: 2 }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Minimum Claim Price"
+              type="number"
+              value={selectedPromo?.minimum_claim_price || ''}
+              onChange={(e) => handleInputChange('minimum_claim_price', e.target.value)}
+              sx={{ mb: 2 }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="Image URL"
+              value={selectedPromo?.imageUrl || ''}
+              onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+              required
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button variant="contained" color="primary">
             {selectedPromo ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
-export default ManagePromos; 
+export default ManagePromos;

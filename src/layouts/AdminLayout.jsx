@@ -1,83 +1,97 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import {
   Box,
   Drawer,
+  AppBar,
+  Toolbar,
   List,
   Typography,
   Divider,
+  IconButton,
   ListItem,
   ListItemIcon,
   ListItemText,
-  useTheme,
-  alpha,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
-  Category as CategoryIcon,
   LocalOffer as PromoIcon,
+  Category as CategoryIcon,
   ViewCarousel as BannerIcon,
   Receipt as TransactionIcon,
+  Menu as MenuIcon
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 const drawerWidth = 260;
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { text: 'Users', icon: <PeopleIcon />, path: '/admin/manage-users' },
-    { text: 'Categories', icon: <CategoryIcon />, path: '/admin/manage-categories' },
-    { text: 'Promos', icon: <PromoIcon />, path: '/admin/manage-promos' },
-    { text: 'Banners', icon: <BannerIcon />, path: '/admin/manage-banners' },
-    { text: 'Transactions', icon: <TransactionIcon />, path: '/admin/transactions' },
+    { text: 'Pengguna', icon: <PeopleIcon />, path: '/admin/users' },
+    { text: 'Promo', icon: <PromoIcon />, path: '/admin/promos' },
+    { text: 'Kategori', icon: <CategoryIcon />, path: '/admin/categories' },
+    { text: 'Banner', icon: <BannerIcon />, path: '/admin/banners' },
+    { text: 'Transaksi', icon: <TransactionIcon />, path: '/admin/transactions' }
   ];
 
   const drawer = (
-    <Box sx={{ height: '100%', bgcolor: 'background.default' }}>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ 
-          fontWeight: 700,
-          background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          color: 'transparent',
-        }}>
+    <div>
+      <Toolbar
+        sx={{
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            bgcolor: 'rgba(0, 0, 0, 0.04)'
+          }
+        }}
+      >
+        <Typography 
+          variant="h6" 
+          noWrap 
+          component="div"
+          sx={{
+            background: 'linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: 700
+          }}
+        >
           Admin Panel
         </Typography>
-      </Box>
-      <Divider sx={{ mb: 2 }} />
+      </Toolbar>
+      <Divider />
       <List>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <ListItem
-              button
+            <ListItem 
+              button 
               key={item.text}
               onClick={() => navigate(item.path)}
+              selected={isActive}
               sx={{
-                mx: 2,
-                mb: 1,
+                my: 0.5,
+                mx: 1,
                 borderRadius: 2,
-                backgroundColor: isActive ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
-                color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                backgroundColor: isActive ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                color: isActive ? 'primary.main' : 'text.primary',
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
                   transform: 'translateX(8px)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 },
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
               <ListItemIcon
                 sx={{
-                  color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
+                  color: isActive ? 'primary.main' : 'text.secondary',
                   minWidth: 40,
                   transition: 'color 0.2s ease',
                 }}
@@ -98,44 +112,58 @@ const AdminLayout = ({ children }) => {
           );
         })}
       </List>
-    </Box>
+    </div>
   );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flex: 1,
-          position: 'relative',
-          pt: `${theme.mixins.toolbar.minHeight}px`,
-        }}
-      >
+      <Box sx={{ display: 'flex', flex: 1 }}>
         <Box
           component="nav"
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box',
-              borderRight: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              boxShadow: '0 0 20px rgba(0,0,0,0.05)',
-              position: 'fixed',
-              top: `${theme.mixins.toolbar.minHeight}px`,
-              height: `calc(100vh - ${theme.mixins.toolbar.minHeight}px)`,
-              zIndex: theme.zIndex.drawer,
-            },
+          sx={{ 
+            width: { sm: drawerWidth },
+            flexShrink: { sm: 0 },
+            position: { sm: 'fixed' },
+            top: 64,
+            bottom: 'auto',
+            height: `calc(100vh - 64px - 200px)`,
+            overflowY: 'auto',
+            zIndex: 1,
+            transition: 'width 0.3s ease',
+            '&:hover': {
+              '& .MuiDrawer-paper': {
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+              }
+            }
           }}
         >
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: 'block', sm: 'none' },
+              '& .MuiDrawer-paper': { 
+                boxSizing: 'border-box', 
+                width: drawerWidth,
+                top: 64,
+                height: `calc(100vh - 64px - 200px)`
+              },
+            }}
+          >
+            {drawer}
+          </Drawer>
           <Drawer
             variant="permanent"
             sx={{
               display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': {
+              '& .MuiDrawer-paper': { 
+                boxSizing: 'border-box', 
+                width: drawerWidth,
                 position: 'static',
-                height: '100%',
+                height: '100%'
               },
             }}
             open
@@ -145,16 +173,15 @@ const AdminLayout = ({ children }) => {
         </Box>
         <Box
           component="main"
-          sx={{
+          sx={{ 
             flexGrow: 1,
-            p: 2.5,
-            pl: 3.5,
+            p: 3,
             width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth - 48}px` },
-            maxWidth: '1600px',
+            ml: { sm: `${drawerWidth}px` },
+            minHeight: `calc(100vh - 64px - 200px)`
           }}
         >
-          {children}
+          <Outlet />
         </Box>
       </Box>
       <Footer />

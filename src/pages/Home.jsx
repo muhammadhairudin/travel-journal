@@ -24,9 +24,9 @@ const Home = () => {
           getActivities()
         ]);
         
-        setBanners(bannersData || []);
-        setPromos(promosData || []);
-        setActivities(activitiesData || []);
+        setBanners(bannersData?.data || []);
+        setPromos(promosData?.data || []);
+        setActivities(activitiesData?.data || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error.message);

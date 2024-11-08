@@ -20,7 +20,7 @@ const Navbar = () => {
           <Typography
             variant="h6"
             component={Link}
-            to="/"
+            to="/homepage"
             sx={{
               flexGrow: 1,
               textDecoration: 'none',

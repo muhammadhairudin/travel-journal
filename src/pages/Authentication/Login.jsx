@@ -18,7 +18,7 @@ const Login = () => {
       authLogin(response.token, response.data.role, response.data);
       
       if (response.data.role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin/Dashboard');
       } else {
         navigate('/');
       }

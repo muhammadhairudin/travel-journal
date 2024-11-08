@@ -24,16 +24,20 @@ export const login = async (email, password) => {
   }
 };
 
-export const register = async (email, password, passwordRepeat) => {
+export const register = async (formData) => {
   try {
     const response = await axiosInstance.post('/register', {
-      email,
-      password,
-      passwordRepeat
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      passwordRepeat: formData.passwordRepeat,
+      role: formData.role,
+      profilePictureUrl: formData.profilePictureUrl,
+      phoneNumber: formData.phoneNumber
     });
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Registration failed');
+    throw new Error(error.response?.data?.message || 'Registrasi gagal');
   }
 };
 
