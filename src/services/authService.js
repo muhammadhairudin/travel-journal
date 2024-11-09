@@ -1,26 +1,77 @@
 import axiosInstance from './axiosInstance';
 
+class AuthError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+  }
+}
+
 export const getUserRole = () => {
     // Contoh mendapatkan peran dari local storage
     return localStorage.getItem('userRole') || 'guest';
   };
 
-export const login = async (email, password) => {
+export const login = async ({ email, password }) => {
   try {
-    const response = await axiosInstance.post('/login', { email, password });
-    
-    if (response.data.code !== "200") {
-      throw new Error(response.data.message || 'Login failed');
+    // Validasi input
+    if (!email || !password) {
+      throw new AuthError('Email dan password harus diisi', 400);
     }
 
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('userRole', response.data.data.role);
-    localStorage.setItem('userData', JSON.stringify(response.data.data));
+    const response = await axiosInstance.post('/login', { email, password });
+    
+    // Validasi response
+    if (!response.data) {
+      throw new AuthError('Response tidak valid', 500);
+    }
 
-    window.location.href = '/';
-    return response.data;
+    const { code, token, user } = response.data;
+    
+    if (code === "200" && token && user) {
+      // Set token ke axios instance
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Simpan data user
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', user.role);
+      
+      return {
+        user,
+        token,
+        code: "200"
+      };
+    }
+    
+    throw new AuthError(response.data.message || 'Login gagal', code);
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Login failed');
+    console.error('Login error:', error);
+    throw handleApiError(error);
+  }
+};
+
+export const validateToken = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    // Set token ke header
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    // Ganti endpoint sesuai dengan API
+    const response = await axiosInstance.get('/validate-token');
+    
+    if (response.data.code === "200") {
+      return true;
+    }
+    
+    // Jika token invalid, bersihkan storage
+    localStorage.clear();
+    return false;
+  } catch (error) {
+    localStorage.clear();
+    delete axiosInstance.defaults.headers.common['Authorization'];
+    return false;
   }
 };
 

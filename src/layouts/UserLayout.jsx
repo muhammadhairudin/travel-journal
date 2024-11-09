@@ -1,36 +1,33 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { useContext } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Box, Container } from '@mui/material';
 
 const UserLayout = () => {
+  const { isAuthenticated, userRole } = useContext(AuthContext);
+
+  // Redirect jika belum login
+  if (!isAuthenticated) {
+    return <Navigate to="/" />;
+  }
+
+  // Redirect admin ke halaman admin
+  if (userRole === 'admin') {
+    return <Navigate to="/admin/dashboard" />;
+  }
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      minHeight: '100vh',
-      bgcolor: 'background.default'
-    }}>
-      <Navbar />
-      <Container 
-        component="main" 
-        maxWidth="xl" 
-        sx={{ 
-          flexGrow: 1,
-          py: { xs: 2, md: 4 },
-          px: { xs: 2, md: 3 },
-          mt: 2,
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
-        <Box sx={{ flex: 1 }}>
-          <Outlet />
-        </Box>
-      </Container>
-      <Footer />
-    </Box>
+    <div className="min-h-screen flex flex-col">
+      <Navbar /> {/* Navbar di bagian atas */}
+      
+      {/* Main content dengan flex-grow agar footer selalu di bawah */}
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <Outlet />
+      </main>
+
+      <Footer /> {/* Footer di bagian bawah */}
+    </div>
   );
 };
 

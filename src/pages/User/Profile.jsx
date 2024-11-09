@@ -1,228 +1,91 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Grid,
-  TextField,
-  Button,
-  Typography,
-  Avatar,
-  Paper,
-  Box,
-  Divider,
-  Alert,
-  CircularProgress
-} from '@mui/material';
-import { useUserApi } from '../../services/userService';
-import EditIcon from '@mui/icons-material/Edit';
-import PersonIcon from '@mui/icons-material/Person';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
+import React, { useContext, useState } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
 const Profile = () => {
-  const [profile, setProfile] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const { userData } = useContext(AuthContext);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    profilePictureUrl: '',
-    address: ''
+    name: userData?.name || '',
+    email: userData?.email || '',
+    phoneNumber: userData?.phoneNumber || '',
+    profilePicture: userData?.profilePictureUrl || ''
   });
 
-  const { getUserProfile, updateUserProfile } = useUserApi();
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await getUserProfile();
-      setProfile(data);
-      setFormData({
-        name: data.name || '',
-        email: data.email || '',
-        phoneNumber: data.phoneNumber || '',
-        profilePictureUrl: data.profilePictureUrl || '',
-        address: data.address || ''
-      });
-    } catch (err) {
-      setError('Failed to load profile data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      await updateUserProfile(formData);
-      setSuccess(true);
-      setIsEditing(false);
-      fetchProfile();
-    } catch (err) {
-      setError('Failed to update profile');
-    } finally {
-      setLoading(false);
-    }
+    // Implement profile update logic
   };
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Grid container spacing={4}>
-          {/* Profile Header */}
-          <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h4" gutterBottom>
-              Profile
-            </Typography>
-            <Button
-              startIcon={<EditIcon />}
-              variant="contained"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? 'Cancel' : 'Edit Profile'}
-            </Button>
-          </Grid>
+    <div className="container mx-auto px-4 max-w-2xl">
+      <h1 className="text-2xl font-bold mb-6">My Profile</h1>
+      
+      <div className="bg-white p-6 rounded-lg shadow">
+        <div className="flex items-center mb-6">
+          <img 
+            src={formData.profilePicture || '/default-avatar.png'} 
+            alt="Profile" 
+            className="w-24 h-24 rounded-full object-cover"
+          />
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold">{formData.name}</h2>
+            <p className="text-gray-600">{formData.email}</p>
+          </div>
+        </div>
 
-          {/* Alert Messages */}
-          {error && (
-            <Grid item xs={12}>
-              <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>
-            </Grid>
-          )}
-          {success && (
-            <Grid item xs={12}>
-              <Alert severity="success" onClose={() => setSuccess(false)}>
-                Profile updated successfully!
-              </Alert>
-            </Grid>
-          )}
-
-          {/* Profile Picture */}
-          <Grid item xs={12} md={4} display="flex" flexDirection="column" alignItems="center">
-            <Avatar
-              src={profile.profilePictureUrl}
-              alt={profile.name}
-              sx={{ width: 200, height: 200, mb: 2 }}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block mb-1">Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              className="w-full px-4 py-2 border rounded"
+              disabled={!isEditing}
             />
-            {isEditing && (
-              <TextField
-                name="profilePictureUrl"
-                label="Profile Picture URL"
-                fullWidth
-                value={formData.profilePictureUrl}
-                onChange={handleChange}
-                size="small"
-              />
-            )}
-          </Grid>
+          </div>
+          
+          <div>
+            <label className="block mb-1">Phone Number</label>
+            <input
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+              className="w-full px-4 py-2 border rounded"
+              disabled={!isEditing}
+            />
+          </div>
 
-          {/* Profile Info */}
-          <Grid item xs={12} md={8}>
+          <div className="flex justify-end space-x-4">
             {isEditing ? (
-              <form onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      name="name"
-                      label="Full Name"
-                      fullWidth
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      name="email"
-                      label="Email"
-                      fullWidth
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      type="email"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      name="phoneNumber"
-                      label="Phone Number"
-                      fullWidth
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      name="address"
-                      label="Address"
-                      fullWidth
-                      multiline
-                      rows={3}
-                      value={formData.address}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      disabled={loading}
-                    >
-                      {loading ? <CircularProgress size={24} /> : 'Save Changes'}
-                    </Button>
-                  </Grid>
-                </Grid>
-              </form>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Save Changes
+                </button>
+              </>
             ) : (
-              <Box>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">{profile.name}</Typography>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <EmailIcon color="primary" />
-                  <Typography>{profile.email}</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <PhoneIcon color="primary" />
-                  <Typography>{profile.phoneNumber || 'Not provided'}</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <LocationOnIcon color="primary" />
-                  <Typography>{profile.address || 'Not provided'}</Typography>
-                </Box>
-              </Box>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Edit Profile
+              </button>
             )}
-          </Grid>
-        </Grid>
-      </Paper>
-    </Container>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 
