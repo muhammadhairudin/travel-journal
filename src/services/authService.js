@@ -26,24 +26,21 @@ export const login = async ({ email, password }) => {
       throw new AuthError('Response tidak valid', 500);
     }
 
-    const { code, token, user } = response.data;
+    const { code, message, data, token } = response.data;
     
-    if (code === "200" && token && user) {
+    if (code === "200" && token) {
       // Set token ke axios instance
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Simpan data user
+      // Simpan data user dan token
       localStorage.setItem('token', token);
-      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('user', JSON.stringify(data));
+      localStorage.setItem('userRole', data.role);
       
-      return {
-        user,
-        token,
-        code: "200"
-      };
+      return response.data; // Return seluruh response data
     }
     
-    throw new AuthError(response.data.message || 'Login gagal', code);
+    throw new AuthError(message || 'Login gagal', code);
   } catch (error) {
     console.error('Login error:', error);
     throw handleApiError(error);
@@ -95,4 +92,23 @@ export const register = async (formData) => {
 export const logout = () => {
   localStorage.clear();
   window.location.href = '/';
+};
+
+const handleApiError = (error) => {
+  if (error instanceof AuthError) {
+    return error;
+  }
+  
+  if (error.response) {
+    return new AuthError(
+      error.response.data.message || 'Terjadi kesalahan pada server',
+      error.response.status
+    );
+  }
+  
+  if (error.request) {
+    return new AuthError('Tidak dapat terhubung ke server', 503);
+  }
+  
+  return new AuthError(error.message || 'Terjadi kesalahan', 500);
 };

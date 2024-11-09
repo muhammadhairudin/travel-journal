@@ -57,17 +57,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const value = {
+    isAuthenticated,
+    setIsAuthenticated,
+    userRole,
+    setUserRole,
+    logout
+  };
+
   if (loading) {
     return <CircularProgress />;
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      userRole,
-      logout,
-      checkAuth 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

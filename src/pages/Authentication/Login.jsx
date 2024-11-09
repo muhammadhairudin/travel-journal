@@ -14,6 +14,9 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import loginImage from '../../assets/images/login.svg';
+import { login } from '../../services/authService';
+import { useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -23,11 +26,36 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setIsAuthenticated, setUserRole } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Implementasi login logic
+    setError('');
+
+    try {
+      const response = await login(formData);
+      
+      if (response.code === "200") {
+        // Set auth context
+        setIsAuthenticated(true);
+        setUserRole(response.data.role);
+        
+        // Redirect berdasarkan role
+        if (response.data.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (response.data.role === 'user') {
+          navigate('/user/homepage');
+        }
+      } else {
+        setError(response.message || 'Login gagal');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Terjadi kesalahan saat login');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -10,8 +10,16 @@ Currently, two official plugins are available:
 
 update commit 2 -
 Perubahan utama yang akan di-commit meliputi:
-Update halaman Register dengan field yang lengkap
-Perbaikan fungsi register di authService
-Penyesuaian role management di dashboard admin
-Penambahan validasi dan error handling
+- Update halaman Register dengan field yang lengkap
+- Perbaikan fungsi register di authService
+- Penyesuaian role management di dashboard admin
+- Penambahan validasi dan error handling
+
+update commit 3 -
+Perubahan pada halaman public:
+- Menambahkan animasi background di About
+- Implementasi carousel pantun dengan autoplay di Contact
+- Perbaikan layout dan styling komponen
+- Optimasi responsive design
+- Penambahan efek hover dan animasi
 
